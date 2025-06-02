@@ -200,7 +200,7 @@ class World:
             if 0 <= rumor_idx - 1 < len(rumors_to_share1):
                 rumor = rumors_to_share1[rumor_idx - 1]
                 if rumor.node_id not in self.rumor_knowledge[persona2.name]:
-                    self.rumor_visor.track_rumor_spread(rumor.node_id, persona1.name, persona2.name)
+                    self.rumor_visor.track_rumor_spread(rumor.node_id, persona1.name, persona2.name, self.current_cycle)
                     self.rumor_knowledge[persona2.name].append(rumor.node_id)
                     print(f"{persona1.name} передал слух {persona2.name}: {rumor.content}")
         
@@ -215,6 +215,6 @@ class World:
             if 0 <= rumor_idx - 1 < len(rumors_to_share2):
                 rumor = rumors_to_share2[rumor_idx - 1]
                 if rumor.node_id not in self.rumor_knowledge[persona1.name]:
-                    self.rumor_visor.track_rumor_spread(rumor.node_id, persona2.name, persona1.name)
+                    self.rumor_visor.track_rumor_spread(rumor.node_id, persona2.name, persona1.name, self.current_cycle)
                     self.rumor_knowledge[persona1.name].append(rumor.node_id)
                     print(f"{persona2.name} передал слух {persona1.name}: {rumor.content}")

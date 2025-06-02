@@ -9,6 +9,7 @@ class AssociativeMemory:
         self.id_to_node: Dict[int, ConceptNode] = {}
         self.seq_chat: List[ConceptNode] = []
         self.seq_thought: List[ConceptNode] = []
+        self.seq_rumor: List[ConceptNode] = []  # Отдельный список для слухов
         self.model = SentenceTransformer('all-MiniLM-L6-v2')
         
     def add_chat(self, node: ConceptNode) -> None:
@@ -20,6 +21,11 @@ class AssociativeMemory:
         """Add a thought node to memory"""
         self.id_to_node[node.node_id] = node
         self.seq_thought.append(node)
+        
+    def add_rumor(self, node: ConceptNode) -> None:
+        """Add a rumor node to memory"""
+        self.id_to_node[node.node_id] = node
+        self.seq_rumor.append(node)
         
     def get_summarized_last_events(self) -> Set[str]:
         """Get a summary of recent events"""
@@ -35,6 +41,10 @@ class AssociativeMemory:
     def get_str_desc_thoughts(self) -> str:
         """Get string description of thought history"""
         return "\n".join([node.description for node in self.seq_thought[-10:]])
+        
+    def get_str_desc_rumors(self) -> str:
+        """Get string description of rumor history"""
+        return "\n".join([node.description for node in self.seq_rumor])
         
     def retrieve_relevant_thoughts(self, query: str, threshold: float = 0.7) -> Set[str]:
         """Retrieve relevant thoughts based on semantic similarity"""

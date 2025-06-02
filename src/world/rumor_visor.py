@@ -9,12 +9,12 @@ class Rumor:
         self.node_id = node_id
         self.spread_history: List[Dict] = []
         
-    def add_spread(self, spreader: str, receiver: str) -> None:
+    def add_spread(self, spreader: str, receiver: str, cycle: int) -> None:
         """Record the spread of the rumor"""
         self.spread_history.append({
             "spreader": spreader,
             "receiver": receiver,
-            "timestamp": self.timestamp + len(self.spread_history)
+            "timestamp": cycle
         })
             
     def get_spread_count(self) -> int:
@@ -47,11 +47,11 @@ class RumorVisor:
         """Get all rumors in the system"""
         return self.rumors
         
-    def track_rumor_spread(self, rumor_id: int, spreader: str, receiver: str) -> bool:
+    def track_rumor_spread(self, rumor_id: int, spreader: str, receiver: str, cycle: int) -> bool:
         """Track the spread of a specific rumor"""
         rumor = self.get_rumor(rumor_id)
         if rumor:
-            rumor.add_spread(spreader, receiver)
+            rumor.add_spread(spreader, receiver, cycle)
             return True
         return False
         

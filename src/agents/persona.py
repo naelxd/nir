@@ -15,7 +15,7 @@ class LLMAPI(ABC):
 class LlamaAPI(LLMAPI):
     def __init__(self):
         self.client = Together()
-        self.model = "meta-llama/Meta-Llama-3.1-8B-Instruct-Turbo"
+        self.model = "meta-llama/Llama-3.3-70B-Instruct-Turbo-Free"
 
     def ask(self, message: str) -> str:
         response = self.client.chat.completions.create(
@@ -100,57 +100,66 @@ class Persona:
         Returns tuple of (answer, list of used rumor numbers)"""
         # Get relevant thoughts for context
         relevant_thoughts = self.associative_memory.retrieve_relevant_thoughts(name)
+        history_with = self.scratch.get_history_with(name)
         prompt = f'''Ты — персонаж в симуляции. Вот твои данные:
 [ПЕРСОНАЖ]
 {self.scratch.get_summary()}
 
-Ты общаешься с другим персонажем.  
-Вот, что ты знаешь о нем:
+Ты общаешься с другим персонажем ({name}).  
+Что ты о нем знаешь (из памяти):
 [ИНФОРМАЦИЯ О СОБЕСЕДНИКЕ]
 {relevant_thoughts if relevant_thoughts else "ничего"}
 
-Ваша история диалога:
-[ИСТОРИЯ ДИАЛОГА]
-{self.scratch.get_summary_chat()}
+Последние сообщения между вами:
+[ИСТОРИЯ ДИАЛОГА С {name.upper()}]
+{history_with}
 
-Слухи:
+Слухи, которые тебе доступны сейчас:
 [СЛУХИ]
-{rumor if rumor else "Слухов нет, требуется вывести []"}
+{rumor if rumor else "Слухов нет, возвращай []"}
 
-Твоя задача: продолжить диалог.  
-Составь логичный и связный ответ в стиле персонажа.  
-Если ты используешь слухи, укажи номера слухов в квадратных скобках после ответа.  
-Пример: Ответ текста. [1,3]  
-Если слухи не использованы, укажи [].
+Твоя задача: продолжить диалог с учётом твоего характера и доступных слухов.  
+— Оформи ответ в стиле твоего персонажа.  
+— Если ты используешь один или несколько слухов, после текста укажи номера слухов в формате [1,2] (без пробелов внутри).  
+— Если не используешь ни один слух, просто напиши «[]» после реплики.
+
+Пример формата:
+«Конечно, я тоже слышал об этом, но не уверен, правда ли это. []»
 
 Важно:
-- Максимальная длина ответа — 100 символов.
-- Используй символы [ и ] **только** для обозначения номеров слухов.
+— Не обрывай мысль на полуслове: напиши развернутую, логичную фразу (до 200 символов, но без искусственных ограничений).  
+— Квадратные скобки «[» и «]» используй только для нумерации слухов.
 
 Ответ:
 '''
         
         answer = self.model.ask(prompt)
         
-        # Извлекаем содержимое между []
         rumor_part = answer[answer.find('[')+1:answer.find(']')]
-        # Разбиваем на числа и конвертируем в int
+
         used_rumors = [int(x.strip()) for x in rumor_part.split(',') if x.strip().isdigit()]
-        # Удаляем часть с номерами слухов из ответа
-        print(answer)
+
         answer = answer[:answer.find('[')].strip()
         
-        self.scratch.add_chat_message(answer, self.name)
-        print(prompt)
+        self.scratch.add_chat_message(answer, self.name, name)
        
         return answer, used_rumors
         
     def generate_rumor(self) -> str:
         """Generate a new rumor"""
+        # Get existing rumors from memory
+        existing_rumors = self.associative_memory.get_str_desc_rumors()
+        
         prompt = f'''Ты персонаж {self.name}. Вот твои характеристики:
 {self.scratch.get_summary()}
 
-Придумай слух. Слух должен быть интересным и правдоподобным. Напиши только слух.'''
+Придумай новый слух. Слух должен быть интересным и правдоподобным.
+Важно: слух должен быть уникальным и не похожим на уже существующие.
+
+Вот уже существующие слухи:
+{existing_rumors if existing_rumors else "Слухов пока нет"}
+
+Напиши только новый уникальный слух.'''
         
         rumor = self.model.ask(prompt)
         
@@ -166,13 +175,13 @@ class Persona:
             object="rumor"
         )
         
-        # Add to memory
-        self.associative_memory.add_thought(rumor_node)
+        # Add to memory using the new rumor-specific method
+        self.associative_memory.add_rumor(rumor_node)
         return rumor
         
     def get_answer(self, answer: str, name: str) -> None:
         """Process and store the answer in memory"""
-        self.scratch.add_chat_message(answer, name)
+        self.scratch.add_chat_message(answer, name, self.name)
         
         # Create chat node
         chat_node = ConceptNode(

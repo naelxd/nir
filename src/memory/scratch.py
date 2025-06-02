@@ -37,9 +37,9 @@ class Scratch:
             summary += "Сейчас нет диалога"
         return summary
         
-    def add_chat_message(self, message: str, author: str) -> None:
+    def add_chat_message(self, message: str, author: str, recipient: str) -> None:
         """Add a message to the chat history"""
-        self.chat.append([author, message])
+        self.chat.append([author, message, recipient])
         
     def get_summary_dict(self) -> Dict:
         """Get a dictionary summary of the persona's current state"""
@@ -49,4 +49,17 @@ class Scratch:
             "innate_traits": self.innate_traits,
             "learned_traits": self.learned_traits,
             "lifestyle": self.lifestyle
-        } 
+        }
+    
+    def get_history_with(self, interlocutor: str) -> str:
+        """
+        Возвращает строки вида "Автор: текст" только тех сообщений,
+        где автор == interlocutor и recipient == self.name,
+        или автор == self.name и recipient == interlocutor.
+        """
+        filtered = []
+        for author, msg, recipient in self.chat:
+            if (author == interlocutor and recipient == self.name) or \
+               (author == self.name and recipient == interlocutor):
+                filtered.append(f"{author}: {msg}")
+        return "\n".join(filtered) if filtered else ""
