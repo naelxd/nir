@@ -4,6 +4,9 @@ import time
 import random
 from world.rumor_visor import RumorVisor
 from agents.persona import Persona
+import os
+from datetime import datetime
+import json
 
 class World:
     def __init__(self):
@@ -82,7 +85,7 @@ class World:
         print(f"\nЗапуск симуляции на {max_cycles} циклов...")
         while self.current_cycle < max_cycles:
             self.run_cycle()
-            time.sleep(5)
+            time.sleep(1)
             
         print(f"\nСимуляция завершена после {self.current_cycle} циклов")
         
@@ -115,6 +118,17 @@ class World:
                 print("\nСлух не был передан другим агентам")
             
             print("-" * 30)
+            
+        # Сохранение данных о слухах
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        save_dir = os.path.join("simulation_results", timestamp)
+        os.makedirs(save_dir, exist_ok=True)
+        
+        # Сохраняем статистику слухов вместе с информацией о знаниях персон
+        self.rumor_visor.save_path = save_dir
+        self.rumor_visor.save_rumor_stats("rumor_stats.json", self.rumor_knowledge)
+            
+        print(f"\nДанные симуляции сохранены в директории: {save_dir}")
         
     def shuffle(self) -> None:
         """Shuffle the order of personas for interaction based on minimum distances"""
@@ -202,7 +216,7 @@ class World:
                 if rumor.node_id not in self.rumor_knowledge[persona2.name]:
                     self.rumor_visor.track_rumor_spread(rumor.node_id, persona1.name, persona2.name, self.current_cycle)
                     self.rumor_knowledge[persona2.name].append(rumor.node_id)
-                    print(f"{persona1.name} передал слух {persona2.name}: {rumor.content}")
+                    print(f"{persona1.name} ПЕРЕДАЛ СЛУХ {persona2.name}: {rumor.content}")
         
         # Агент 2 отвечает, вставляя свои слухи
         rumor_text2 = "\n".join([f"{i+1}. Кстати, я слышал: {r.content}" for i, r in enumerate(rumors_to_share2)])

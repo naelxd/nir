@@ -39,11 +39,15 @@ class ChatGPTAPI(LLMAPI):
 class Persona:
     def __init__(self, name: str, first_name: str, last_name: str, 
                  age: int, innate_traits: str, lifestyle: str,
-                 model_type: str = "llama", api_key: str = None):
+                 model_type: str = "llama", api_key: str = None,
+                 reflection_enabled: bool = True):
         self.name = name
         self.scratch = Scratch(name, first_name, last_name, age, 
                              innate_traits, lifestyle)
         self.associative_memory = AssociativeMemory()
+        self.message_count = 0  # Счетчик сообщений
+        self.REFLECTION_THRESHOLD = 20  # Порог для рефлексии
+        self.reflection_enabled = reflection_enabled  # Флаг включения рефлексии
         
         # Initialize appropriate model
         if model_type.lower() == "chatgpt":
@@ -198,6 +202,25 @@ class Persona:
         # Add to memory
         self.associative_memory.add_chat(chat_node)
         
+        # Увеличиваем счетчик сообщений
+        self.message_count += 1
+        
+        # Проверяем, нужно ли запустить рефлексию
+        if self.reflection_enabled and self.message_count >= self.REFLECTION_THRESHOLD:
+            print(f"\n{self.name} размышляет о последних событиях...")
+            self.reflect()
+            self.message_count = 0  # Сбрасываем счетчик
+        
     def get_name(self) -> str:
         """Get the persona's name"""
         return self.name 
+
+    def enable_reflection(self) -> None:
+        """Включить механизм рефлексии"""
+        self.reflection_enabled = True
+        print(f"Рефлексия для {self.name} включена")
+        
+    def disable_reflection(self) -> None:
+        """Отключить механизм рефлексии"""
+        self.reflection_enabled = False
+        print(f"Рефлексия для {self.name} отключена") 

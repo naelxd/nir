@@ -51,14 +51,14 @@ class Scratch:
             "lifestyle": self.lifestyle
         }
     
-    def get_history_with(self, interlocutor: str) -> str:
+    def get_history_with(self, interlocutor: str, max_messages: int = 20) -> str:
         """
         Возвращает строки вида "Автор: текст" только тех сообщений,
         где автор == interlocutor и recipient == self.name,
         или автор == self.name и recipient == interlocutor.
         """
         filtered = []
-        for author, msg, recipient in self.chat:
+        for author, msg, recipient in self.chat[-max_messages:]:
             if (author == interlocutor and recipient == self.name) or \
                (author == self.name and recipient == interlocutor):
                 filtered.append(f"{author}: {msg}")

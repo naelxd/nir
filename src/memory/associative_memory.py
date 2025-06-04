@@ -30,7 +30,7 @@ class AssociativeMemory:
     def get_summarized_last_events(self) -> Set[str]:
         """Get a summary of recent events"""
         recent_events = set()
-        for node in self.seq_chat[-5:]:  # Last 5 chat events
+        for node in self.seq_chat[-50:]:  # Last 50 chat events
             recent_events.add(node.description)
         return recent_events
         
@@ -46,7 +46,7 @@ class AssociativeMemory:
         """Get string description of rumor history"""
         return "\n".join([node.description for node in self.seq_rumor])
         
-    def retrieve_relevant_thoughts(self, query: str, threshold: float = 0.7) -> Set[str]:
+    def retrieve_relevant_thoughts(self, query: str, threshold: float = 0.7, max_results: int = 10) -> Set[str]:
         """Retrieve relevant thoughts based on semantic similarity"""
         if not self.seq_thought:
             return set()
@@ -60,9 +60,12 @@ class AssociativeMemory:
         
         # Get relevant thoughts above threshold
         relevant_indices = np.where(similarities > threshold)[0]
-        relevant_thoughts = set()
+        relevant_thoughts = []
         
+        # Сортируем мысли по убыванию релевантности
         for idx in relevant_indices:
-            relevant_thoughts.add(self.seq_thought[idx].description)
+            relevant_thoughts.append((similarities[idx], self.seq_thought[idx].description))
             
-        return relevant_thoughts 
+        # Сортируем по убыванию релевантности и берем топ max_results
+        relevant_thoughts.sort(reverse=True)
+        return set(thought for _, thought in relevant_thoughts[:max_results])

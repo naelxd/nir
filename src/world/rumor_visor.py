@@ -1,5 +1,7 @@
 from typing import List, Dict, Optional
 from datetime import datetime
+import json
+import os
 
 class Rumor:
     def __init__(self, content: str, creator: str, timestamp: int, node_id: int):
@@ -24,11 +26,38 @@ class Rumor:
     def get_spread_path(self) -> List[Dict]:
         """Get the complete spread path of the rumor"""
         return self.spread_history
+        
+    def to_dict(self) -> Dict:
+        """Convert rumor object to dictionary for JSON serialization"""
+        return {
+            "content": self.content,
+            "creator": self.creator,
+            "timestamp": self.timestamp,
+            "node_id": self.node_id,
+            "spread_history": self.spread_history
+        }
+        
+    @classmethod
+    def from_dict(cls, data: Dict) -> 'Rumor':
+        """Create rumor object from dictionary"""
+        rumor = cls(
+            content=data["content"],
+            creator=data["creator"],
+            timestamp=data["timestamp"],
+            node_id=data["node_id"]
+        )
+        rumor.spread_history = data["spread_history"]
+        return rumor
 
 class RumorVisor:
-    def __init__(self):
+    def __init__(self, save_path: str = "rumors_data"):
         self.rumors: List[Rumor] = []
         self.rumor_id_counter = 0
+        self.save_path = save_path
+        
+        # Create save directory if it doesn't exist
+        if not os.path.exists(save_path):
+            os.makedirs(save_path)
         
     def add_rumor(self, content: str, creator: str, timestamp: int) -> int:
         """Add a new rumor to the system"""
@@ -91,4 +120,30 @@ class RumorVisor:
                 "to": spread["receiver"]
             })
             
-        return network 
+        return network
+        
+    def save_rumor_stats(self, filename: str = "rumor_stats.json", persona_knowledge: Dict[str, List[int]] = None) -> None:
+        """Save statistics for all rumors to a JSON file"""
+        filepath = os.path.join(self.save_path, filename)
+        stats = {
+            "total_rumors": len(self.rumors),
+            "rumors": {},
+            "persona_knowledge": persona_knowledge or {}
+        }
+        
+        for rumor in self.rumors:
+            network = self.get_rumor_network(rumor.node_id)
+            stats["rumors"][str(rumor.node_id)] = {
+                "content": rumor.content,
+                "creator": rumor.creator,
+                "timestamp": rumor.timestamp,
+                "spread_count": rumor.get_spread_count(),
+                "spread_history": rumor.spread_history,
+                "network": {
+                    "nodes": list(network["nodes"]) if network else [],
+                    "edges": network["edges"] if network else []
+                }
+            }
+            
+        with open(filepath, 'w', encoding='utf-8') as f:
+            json.dump(stats, f, ensure_ascii=False, indent=2) 

@@ -1,0 +1,128 @@
+@startuml
+
+' Main classes
+class World {
+    - personas               : Map<String, Persona>
+    - distances              : List<List<Integer>>
+    - rumor_visor            : RumorVisor
+    - current_cycle          : Integer
+    - rumor_knowledge        : Map<String, List<Integer>>
+    - epoch_to_shuffle_distance : Integer
+    - RUMOR_PERIOD           : Integer
+    - SHUFFLE_PERIOD         : Integer
+    + add_persona(persona_data : Map<String, Object>) : void
+    + start(personas_info : List<Map<String, Object>>, max_cycles : Integer) : void
+    + shuffle()             : void
+    + run_cycle()           : void
+    - _update_distances()   : void
+    - _generate_new_rumor() : void
+    - _simulate_interaction(p1 : Persona, p2 : Persona) : void
+}
+
+class Persona {
+    - name                  : String
+    - scratch               : Scratch
+    - associative_memory    : AssociativeMemory
+    - model                 : LLMAPI
+    + reflect()             : void
+    + retrieve()            : Map<String, Object>
+    + answer(name : String) : String
+    + generate_rumor()      : String
+    + get_answer(answer : String, name : String) : void
+    + get_name()            : String
+}
+
+class RumorVisor {
+    - rumors              : List<Rumor>
+    - rumor_id_counter    : Integer
+    + add_rumor(content : String, creator : String, timestamp : Integer) : Integer
+    + get_rumor(rumor_id : Integer) : Rumor
+    + get_all_rumors()     : List<Rumor>
+    + track_rumor_spread(rumor_id : Integer, spreader : String, receiver : String, cycle : Integer) : Boolean
+    + get_rumor_stats(rumor_id : Integer) : Map<String, Object>
+}
+
+class Rumor {
+    - content        : String
+    - creator        : String
+    - timestamp      : Integer
+    - node_id        : Integer
+    - spread_history : List<Map<String, Object>>
+    + add_spread(spreader : String, receiver : String, cycle : Integer) : void
+    + get_spread_count() : Integer
+    + get_spread_path()  : List<Map<String, Object>>
+}
+
+class AssociativeMemory {
+    - id_to_node     : Map<Integer, ConceptNode>
+    - seq_chat       : List<ConceptNode>
+    - seq_thought    : List<ConceptNode>
+    - seq_rumor      : List<ConceptNode>
+    - model          : String
+    + add_chat(node : ConceptNode)   : void
+    + add_thought(node : ConceptNode) : void
+    + add_rumor(node : ConceptNode)   : void
+    + get_summarized_last_events() : Set<String>
+    + get_str_desc_chats()         : String
+    + get_str_desc_thoughts()      : String
+    + get_str_desc_rumors()        : String
+}
+
+class ConceptNode {
+    - node_id    : Integer
+    - node_type  : String
+    - description : String
+    - embedding_key : String
+    - poignancy  : Integer
+    - subject    : String
+    - predicate  : String
+    - object     : String
+    + spo_summary() : Tuple<String, String, String>
+}
+
+class Scratch {
+    - name            : String
+    - first_name      : String
+    - last_name       : String
+    - age             : Integer
+    - innate_traits   : String
+    - lifestyle       : String
+    - chatting_with   : String
+    - chat            : List<List<String>>
+    - learned_traits  : String
+    + is_chat()       : Boolean
+    + get_summary()   : String
+    + get_summary_chat() : String
+    + add_chat_message(message : String, author : String, recipient : String) : void
+    + get_summary_dict() : Map<String, Object>
+    + get_history_with(interlocutor : String) : String
+}
+
+abstract class LLMAPI {
+    +{abstract} ask(message : String) : String
+}
+
+class ChatGPTAPI {
+    - client : String
+    - model  : String
+    + ask(message : String) : String
+}
+
+class LlamaAPI {
+    - client : String
+    - model  : String
+    + ask(message : String) : String
+}
+
+' Relationships
+World "1" *-- "2..*" Persona
+World "1" *-- "1" RumorVisor
+RumorVisor "1" *-- "0..*" Rumor
+Persona "1" *-- "1" Scratch
+Persona "1" *-- "1" AssociativeMemory
+Persona "1" *-- "1" LLMAPI
+AssociativeMemory "1" *-- "0..*" ConceptNode
+LLMAPI <|-- ChatGPTAPI
+LLMAPI <|-- LlamaAPI
+
+@enduml
